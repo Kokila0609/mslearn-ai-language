@@ -3,7 +3,9 @@ from datetime import datetime
 import os
 
 # Import namespaces
-
+# Import namespaces
+from azure.core.credentials import AzureKeyCredential
+import azure.cognitiveservices.speech as speech_sdk
 
 def main():
 
@@ -20,7 +22,9 @@ def main():
 
         # Configure speech service
         
-
+        # Configure speech service
+        speech_config = speech_sdk.SpeechConfig(speech_key, speech_region)
+        print('Ready to use speech service in:', speech_config.region)
         # Get spoken input
         command = TranscribeCommand()
         if command.lower() == 'what time is it?':
@@ -34,8 +38,24 @@ def TranscribeCommand():
 
     # Configure speech recognition
 
-
+    # Configure speech recognition
+    current_dir = os.getcwd()
+    audioFile = current_dir + '/time.wav'
+    audio_config = speech_sdk.AudioConfig(filename=audioFile)
+    speech_recognizer = speech_sdk.SpeechRecognizer(speech_config, audio_config)
     # Process speech input
+    # Process speech input
+    print("Listening...")
+    speech = speech_recognizer.recognize_once_async().get()
+    if speech.reason == speech_sdk.ResultReason.RecognizedSpeech:
+        command = speech.text
+        print(command)
+    else:
+        print(speech.reason)
+        if speech.reason == speech_sdk.ResultReason.Canceled:
+            cancellation = speech.cancellation_details
+            print(cancellation.reason)
+            print(cancellation.error_details)
 
 
     # Return the command
@@ -48,11 +68,34 @@ def TellTime():
 
 
     # Configure speech synthesis
-    
-
+    # Configure speech synthesis
+    output_file = "output.wav"
+    speech_config.speech_synthesis_voice_name = "en-GB-RyanNeural"
+    audio_config = speech_sdk.audio.AudioConfig(filename=output_file)
+    speech_synthesizer = speech_sdk.SpeechSynthesizer(speech_config, audio_config,) 
+   
     # Synthesize spoken output
+    # Synthesize spoken output
+    speak = speech_synthesizer.speak_text_async(response_text).get()
+    if speak.reason != speech_sdk.ResultReason.SynthesizingAudioCompleted:
+        print(speak.reason)
+    else:
+        print("Spoken output saved in " + output_file)
 
-
+    # Synthesize spoken output in 
+    # responseSsml = " \
+    #    <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'> \
+    #        <voice name='en-GB-LibbyNeural'> \
+    #            {} \
+    #            <break strength='weak'/> \
+    #            Time to end this lab! \
+    #        </voice> \
+    #    </speak>".format(response_text)
+    # speak = speech_synthesizer.speak_ssml_async(responseSsml).get()
+    # if speak.reason != speech_sdk.ResultReason.SynthesizingAudioCompleted:
+    #    print(speak.reason)
+    # else:
+    #    print("Spoken output saved in " + output_file)
     # Print the response
     print(response_text)
 
